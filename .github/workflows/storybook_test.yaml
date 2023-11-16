@@ -12,6 +12,8 @@ on:
     paths:
       - 'pnpm-lock.yaml'
       - typescript/!(tools)/!(internal|debug)/**
+      - typescript/!(tools)/*
+      - typescript/*
 concurrency:
   # use PR number for PRs, ref for master pushes (not using sha for master so we can merge runs for consecutive commits to lower cost).
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,6 +37,8 @@ jobs:
             storybook:
               - 'pnpm-lock.yaml'
               - typescript/!(tools)/!(internal|debug)/**
+              - typescript/!(tools)/*
+              - typescript/*
   storybook_test:
     needs: [path_check]
     # Run on master commits or PRs that we want to run storybook tests.
