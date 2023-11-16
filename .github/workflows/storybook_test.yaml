@@ -20,6 +20,7 @@ jobs:
     # Required permissions
     permissions:
       pull-requests: read
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       should_run_storybook: ${{ steps.filter.outputs.storybook }}
