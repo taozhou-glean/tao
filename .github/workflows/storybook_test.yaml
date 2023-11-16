@@ -3,12 +3,12 @@ name: storybook_tests
 on:
   pull_request:
     branches:
-      - master
+      - main
       - fe-release-**
   # Run on master continuously to catch any issues on HEAD.
   push:
     branches:
-      - master
+      - main
     paths:
       - 'pnpm-lock.yaml'
       - typescript/**
