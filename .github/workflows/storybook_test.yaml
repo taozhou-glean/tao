@@ -1,0 +1,106 @@
+# https://docs.buf.build/ci-cd/github-actions
+name: storybook_tests
+on:
+  pull_request:
+    branches:
+      - master
+      - fe-release-**
+  # Run on master continuously to catch any issues on HEAD.
+  push:
+    branches:
+      - master
+    paths:
+      - 'pnpm-lock.yaml'
+      - typescript/**
+      - '!typescript/web/internal/**'
+      - '!typescript/web/debug/**'
+      - '!typescript/tools/**'
+concurrency:
+  # use PR number for PRs, ref for master pushes (not using sha for master so we can merge runs for consecutive commits to lower cost).
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  # This is needed so we can mark the storybook_test as required on repo level.
+  # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  path_check:
+    if: ${{ github.event_name == 'pull_request' }}
+    # Required permissions
+    permissions:
+      pull-requests: read
+    runs-on: ubuntu-latest
+    outputs:
+      should_run_storybook: ${{ steps.filter.outputs.storybook }}
+    steps:
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            storybook:
+              - 'pnpm-lock.yaml'
+              - 'typescript/**'
+              - '!typescript/web/internal/**'
+              - '!typescript/web/debug/**'
+              - '!typescript/tools/**'
+  storybook_test:
+    needs: [path_check]
+    # Run on master commits or PRs that we want to run storybook tests.
+    if: ${{ always() && (github.event_name == 'push' || needs.path_check.outputs.should_run_storybook == 'true') }}
+    # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
+    # runs-on: macos-latest-large
+    runs-on: ubuntu-latest
+    # should finish ~6 min, 10 min max for -large
+    # need to increase to 25 min for standard
+    timeout-minutes: 10
+
+    steps:
+      # for using remote_http_cache / upload artifacts to gcs
+      # - name: 'google auth'
+      #   uses: 'google-github-actions/auth@v1'
+      #   with:
+      #     credentials_json: '${{ secrets.GCR_KEY }}'
+
+      - run: echo "expect to run storybook test"
+
+      # - uses: actions/checkout@v4
+      #   with:
+      #     sparse-checkout: |
+      #       typescript
+      #       data
+
+      # - uses: pnpm/action-setup@v2
+      #   name: Install pnpm
+      #   with:
+      #     version: 8
+      #     run_install: false
+
+      # - name: Get pnpm store directory
+      #   shell: bash
+      #   run: |
+      #     echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      # - uses: actions/cache@v3
+      #   name: Setup pnpm cache
+      #   with:
+      #     path: ${{ env.STORE_PATH }}
+      #     # intentionally reuse the same key across PRs as long as its on same OS.
+      #     key: ${{ runner.os }}-pnpm-store
+
+      # # install playwright browser which is not cached.
+      # - name: Install dependencies
+      #   run: |
+      #     pnpm install --frozen-lockfile
+      #     if [[ ! -d ~/Library/Caches/ms-playwright ]]; then
+      #       pnpm playwright install --with-deps chromium
+      #     fi
+
+      # - name: storybook_test
+      #   run: pnpm storybook:test
+
+      # - name: upload error
+      #   if: failure()
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: storybook_diff
+      #     # contains the diff of the storybook test
+      #     path: /tmp/storybook
+      #     retention-days: 1
