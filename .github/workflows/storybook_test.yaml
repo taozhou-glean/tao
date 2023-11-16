@@ -25,6 +25,12 @@ jobs:
     outputs:
       should_run_storybook: ${{ steps.filter.outputs.storybook }}
     steps:
+      - uses: actions/checkout@v4
+        if: ${{ github.event_name == 'push' }}
+        with:
+          sparse-checkout: |
+            typescript
+            data
       - uses: dorny/paths-filter@v2
         id: filter
         with:
