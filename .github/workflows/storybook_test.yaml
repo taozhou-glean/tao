@@ -62,6 +62,7 @@ jobs:
               })
               result.should_run_storybook = reviews.data.length > 0
             }
+            console.log(result)
             return result
   storybook_test:
     needs: [requirement_check]
