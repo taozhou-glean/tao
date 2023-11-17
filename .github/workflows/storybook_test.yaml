@@ -62,7 +62,7 @@ jobs:
               })
               result.should_run_storybook = reviews.data.length > 0
             }
-            console.log(result)
+            console.log(result, context.payload)
             return result
   storybook_test:
     needs: [requirement_check]
