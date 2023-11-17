@@ -57,14 +57,10 @@ jobs:
             return {
               ready_to_run_storybook: reviews.data.length > 0,
             }
-      - run: |
-            echo ${{ steps.filter.outputs.storybook }}
-            echo ${{ fromJson(steps.pr_requirements.outputs.result).ready_to_run_storybook }}
-            echo "${{ fromJson(steps.pr_requirements.outputs.result).ready_to_run_storybook }}"
   storybook_test:
     needs: [requirement_check]
     # Run on master commits or PRs that we want to run storybook tests.
-    if: ${{ success() && needs.requirement_check.outputs.should_run_storybook == 'true' && needs.requirement_check.outputs.ready_to_run_storybook }}
+    if: ${{ success() && needs.requirement_check.outputs.should_run_storybook == 'true' && needs.requirement_check.outputs.ready_to_run_storybook == 'true' }}
     # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
     runs-on: ubuntu-latest
     # should finish ~6 min, 10 min max for -large
