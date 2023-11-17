@@ -1,0 +1,22 @@
+name: master_storybook_ci
+on:
+  # Run on master continuously to catch any issues on HEAD.
+  push:
+    branches:
+      - master
+    paths:
+      - 'pnpm-lock.yaml'
+      - 'typescript/**'
+      - '!typescript/tools/**'
+      - '!typescript/web/internal/**'
+      - '!typescript/web/debug/**'
+jobs:
+  master_storybook_test:
+    # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
+    runs-on: ubuntu-latest
+    # should finish ~6 min, 10 min max for -large
+    # need to increase to 25 min for standard
+    timeout-minutes: 10
+
+    steps:
+      - run: echo "running"
