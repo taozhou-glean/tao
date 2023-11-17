@@ -31,7 +31,7 @@ jobs:
     outputs:
       # macos runner is expensive, so we don't run it on drafts - its recommended for eng to run storybook locally before sending out your PR.
       should_run_storybook: ${{ steps.filter.outputs.storybook }}
-      ready_to_run_storybook: ${{ toJson(steps.pr_requirements.outputs.result).ready_to_run_storybook }}
+      ready_to_run_storybook: ${{ steps.pr_requirements.outputs.result.ready_to_run_storybook }}
     steps:
       - uses: dorny/paths-filter@v2
         id: filter
@@ -54,13 +54,14 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             })
+            console.log(reviews)
             return {
               ready_to_run_storybook: reviews.data.length > 0,
             }
   storybook_test:
     needs: [requirement_check]
     # Run on master commits or PRs that we want to run storybook tests.
-    if: ${{ success() && needs.requirement_check.outputs.should_run_storybook == 'true' && needs.requirement_check.outputs.ready_to_run_storybook == true }}
+    if: ${{ success() && needs.requirement_check.outputs.should_run_storybook == 'true' && needs.requirement_check.outputs.ready_to_run_storybook }}
     # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
     runs-on: ubuntu-latest
     # should finish ~6 min, 10 min max for -large
