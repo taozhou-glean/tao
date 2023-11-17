@@ -1,0 +1,29 @@
+# Run on master continuously to catch any issues on HEAD.
+name: master_storybook
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pnpm-lock.yaml'
+      - 'typescript/**'
+      - '!typescript/tools/**'
+      - '!typescript/web/internal/**'
+      - '!typescript/web/debug/**'
+# Note: no concurrency as cancel is considered as failure on master check status, and also we do
+# want to run it on every FE commit.
+jobs:
+  master_storybook_test:
+    runs-on: ubuntu-latest 
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            typescript
+            data
+
+      - run: |
+          echo "will run test"
+          exit 1

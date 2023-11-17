@@ -1,5 +1,5 @@
 # https://docs.buf.build/ci-cd/github-actions
-name: storybook_tests
+name: storybook_tests_ci
 on:
   pull_request_review:
     types:
@@ -9,39 +9,27 @@ on:
       - opened
       - synchronize
       - reopened
+      # intentionally only listen on labeled, as we don't care about unlabeled.
+      - labeled
+      # need this as we will skip the test on draft PRs to save cost.
       - converted_to_draft
-      - ready_for_review # need this as we will skip the test on draft PRs to save cost.
-  # Run on master continuously to catch any issues on HEAD.
-  push:
-    branches:
-      - main
+      - ready_for_review
 concurrency:
-  # we use pr number for pull request, and sha for push so we can run on every commit.
-  # Note: cancel is considered as failure on master check status.
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
   # The requirement_check step is needed so we can mark the storybook_test as required on repo level.
   # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   requirement_check:
     # Run storybook check only for non-draft PRs and post-approval.
-    if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) || (github.event_name == 'pull_request_review' && github.event.pull_request.review.state == 'APPROVED') }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == false) || (github.event_name == 'pull_request_review' && github.event.review.state == 'APPROVED') }}
     permissions:
-      pull-requests: read
+      # for labeler
+      pull-requests: write
       contents: read
     # Use ubuntu so it costs less, this step will run on all PRs.
     runs-on: ubuntu-latest
-    outputs:
-      # macos runner is expensive, so we don't run it on drafts - its recommended for eng to run storybook locally before sending out your PR.
-      should_run_storybook: ${{ steps.filter.outputs.storybook }}
-      approved: ${{ steps.review_status.outputs.result == 'true' }}
     steps:
-      - uses: actions/checkout@v4
-        if: ${{ github.event_name == 'push' }}
-        with:
-          sparse-checkout: |
-            typescript
-            data
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -53,8 +41,8 @@ jobs:
               - typescript/!(tools)/*
               - typescript/*
       - uses: actions/github-script@v7
-        if: ${{ github.event_name == 'pull_request' }}
-        id: review_status
+        # Run only if storybook should be run on this PR.
+        if: ${{ steps.filter.outputs.storybook }}
         with:
           result-encoding: string
           script: |
@@ -63,12 +51,18 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             })
-            console.log(reviews)
-            return reviews.data.some((review) => review.state === 'APPROVED')
+            const isApproved = reviews.data.some((review) => review.state === 'APPROVED')
+            if (isApproved) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: ['storybook:ready'],
+              })
+            }
   storybook_test:
-    needs: [requirement_check]
-    # Run on master commits or PRs that we want to run storybook tests.
-    if: ${{ success() && needs.requirement_check.outputs.should_run_storybook == 'true' && needs.requirement_check.outputs.approved == 'true'  }}
+    # Run on master commits or PRs that we want to run storybook tests (avoid running it on `pull_request_review` which will create a separate run)
+    if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels, 'storybook:ready') }}
     # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
     runs-on: ubuntu-latest 
     # should finish ~6 min, 10 min max for -large
@@ -84,3 +78,4 @@ jobs:
 
       - run: |
           echo "will run test"
+          exit 1
