@@ -22,7 +22,7 @@ jobs:
   # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   requirement_check:
     # Run storybook check only for non-draft PRs and post-approval.
-    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == false) || (github.event_name == 'pull_request_review' && github.event.review.state == 'APPROVED') }}
+    if: ${{ (github.event_name == 'pull_request' && (github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'storybook:ready'))) || (github.event_name == 'pull_request_review' && github.event.review.state == 'APPROVED') }}
     permissions:
       # for labeler
       pull-requests: write
