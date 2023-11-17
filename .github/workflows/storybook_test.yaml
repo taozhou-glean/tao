@@ -44,7 +44,8 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const hasStorybookChange = '${{ steps.filter.outputs.storybook }}'
+            const hasStorybookChange = '${{ steps.filter.outputs.storybook }}' === "true"
+            const isDraft = '${{ github.event.pull_request.draft }}' === "true"
             const removeLabel = () => {
               return github.rest.issues.removeLabel({
                 owner: context.repo.owner,
@@ -61,7 +62,7 @@ jobs:
                 labels: ['storybook:ready'],
               })
             }
-            if (!hasStorybookChange) {
+            if (!hasStorybookChange || isDraft) {
               await removeLabel()
               return
             }
