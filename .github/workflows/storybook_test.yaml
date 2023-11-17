@@ -53,7 +53,7 @@ jobs:
             }
             const action = context.action
             if (action === "review_requested") {
-              result.should_run_storybook = context.payload.requested_reviewers.length > 1
+              result.should_run_storybook = context.payload.requested_reviewers.length > 0
             } else {
               const reviews = await github.rest.pulls.listReviews({
                 owner: context.repo.owner,
