@@ -22,7 +22,7 @@ jobs:
   # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   requirement_check:
     # We skip this check completely on draft PRs or PRs with no reviewers.
-    if: ${{ github.event.pull_request.draft == false || join(github.event.pull_request.requested_reviewers.*.login, ',') != '' }}
+    if: ${{ github.event.pull_request.draft == false && join(github.event.pull_request.requested_reviewers.*.login, ',') != '' }}
     permissions:
       pull-requests: read
       contents: read
