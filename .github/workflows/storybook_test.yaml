@@ -18,17 +18,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}
   cancel-in-progress: true
 jobs:
-  test_test:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          echo "${{toJson(github.event)}}"
-          echo ${{ join(github.event.pull_request.requested_reviewers.*.login, ',') }}
   # The requirement_check step is needed so we can mark the storybook_test as required on repo level.
   # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   requirement_check:
-    # We skip this check completely on draft PRs or PRs with no reviewers.
-    if: ${{ github.event.pull_request.draft == false && join(github.event.pull_request.requested_reviewers.*.login, ',') != '' }}
+    # We skip this check completely on draft PRs.
+    if: ${{ github.event.pull_request.draft == false }}
     permissions:
       pull-requests: read
       contents: read
@@ -37,6 +31,7 @@ jobs:
     outputs:
       # macos runner is expensive, so we don't run it on drafts - its recommended for eng to run storybook locally before sending out your PR.
       should_run_storybook: ${{ steps.filter.outputs.storybook }}
+      ready_to_run_storybook: ${{ toJson(steps.pr_requirements.outputs.result).ready_to_run_storybook }}
     steps:
       - uses: dorny/paths-filter@v2
         id: filter
@@ -48,10 +43,24 @@ jobs:
               - typescript/!(tools)/!(internal|debug)/**
               - typescript/!(tools)/*
               - typescript/*
+      - uses: actions/github-script@v7
+        if: ${{ steps.filter.outputs.storybook }}
+        id: pr_requirements
+        with:
+          github-token: ${{ secrets.TEMP_TOKEN}}
+          script: |
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            })
+            return {
+              ready_to_run_storybook: reviews.data.length > 0,
+            }
   storybook_test:
     needs: [requirement_check]
     # Run on master commits or PRs that we want to run storybook tests.
-    if: ${{ success() && needs.requirement_check.outputs.should_run_storybook == 'true' }}
+    if: ${{ success() && needs.requirement_check.outputs.should_run_storybook == 'true' && needs.requirement_check.outputs.ready_to_run_storybook == true }}
     # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
     runs-on: ubuntu-latest
     # should finish ~6 min, 10 min max for -large
