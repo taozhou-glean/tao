@@ -18,6 +18,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}
   cancel-in-progress: true
 jobs:
+  test_test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{ join(github.event.pull_request.requested_reviewers.*.login, ',') }}
   # The requirement_check step is needed so we can mark the storybook_test as required on repo level.
   # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   requirement_check:
