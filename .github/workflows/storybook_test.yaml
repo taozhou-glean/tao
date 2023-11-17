@@ -41,11 +41,31 @@ jobs:
               - typescript/!(tools)/*
               - typescript/*
       - uses: actions/github-script@v7
-        # Run only if storybook should be run on this PR.
-        if: ${{ steps.filter.outputs.storybook }}
         with:
           result-encoding: string
           script: |
+            const hasStorybookChange = '${{ steps.filter.outputs.storybook }}'
+            const removeLabel = () => {
+              return github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                name: ['storybook:ready'],
+              })
+            }
+            const addLabel = () => {
+              return github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: ['storybook:ready'],
+              })
+            }
+            if (!hasStorybookChange) {
+              await removeLabel()
+              return
+            }
+
             const reviews = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -53,21 +73,12 @@ jobs:
             })
             const isApproved = reviews.data.some((review) => review.state === 'APPROVED')
             if (isApproved) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                labels: ['storybook:ready'],
-              })
+              await addLabel()
             } else {
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                name: ['storybook:ready'],
-              })
+              await removeLabel()
             }
   storybook_test:
+    needs: [requirement_check]
     # Run on master commits or PRs that we want to run storybook tests (avoid running it on `pull_request_review` which will create a separate run)
     if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'storybook:ready') }}
     # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
