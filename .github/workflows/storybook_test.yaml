@@ -45,7 +45,9 @@ jobs:
           script: |
             const hasStorybookChange = '${{ steps.filter.outputs.storybook }}' === "true"
             const isDraft = '${{ github.event.pull_request.draft }}' === "true"
+            const hasLabel = '${{ contains(github.event.pull_request.labels.*.name, 'storybook:ready') }}' === "true"
             const removeLabel = () => {
+              if (!hasLabel) return
               return github.rest.issues.removeLabel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
