@@ -9,8 +9,8 @@ on:
       - opened
       - synchronize
       - reopened
-      # intentionally only listen on labeled, as we don't care about unlabeled.
       - labeled
+      - unlabeled
       # need this as we will skip the test on draft PRs to save cost.
       - converted_to_draft
       - ready_for_review
@@ -59,10 +59,17 @@ jobs:
                 issue_number: context.payload.pull_request.number,
                 labels: ['storybook:ready'],
               })
+            } else {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                name: ['storybook:ready'],
+              })
             }
   storybook_test:
     # Run on master commits or PRs that we want to run storybook tests (avoid running it on `pull_request_review` which will create a separate run)
-    if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels, 'storybook:ready') }}
+    if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'storybook:ready') }}
     # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
     runs-on: ubuntu-latest 
     # should finish ~6 min, 10 min max for -large
