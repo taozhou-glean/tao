@@ -9,6 +9,7 @@ on:
       - opened
       - synchronize
       - reopened
+      - converted_to_draft
       - ready_for_review # need this as we will skip the test on draft PRs to save cost.
   # Run on master continuously to catch any issues on HEAD.
   push:
