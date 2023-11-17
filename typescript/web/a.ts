@@ -1,1 +1,1 @@
-const omg = "omg"
+const omg = "omg!"
