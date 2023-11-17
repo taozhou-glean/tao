@@ -31,7 +31,7 @@ jobs:
     outputs:
       # macos runner is expensive, so we don't run it on drafts - its recommended for eng to run storybook locally before sending out your PR.
       should_run_storybook: ${{ steps.filter.outputs.storybook }}
-      ready_to_run_storybook: ${{ steps.pr_requirements.outputs.result.ready_to_run_storybook }}
+      ready_to_run_storybook: ${{ fromJson(steps.pr_requirements.outputs.result).ready_to_run_storybook }}
     steps:
       - uses: dorny/paths-filter@v2
         id: filter
@@ -59,7 +59,8 @@ jobs:
             }
       - run: |
             echo ${{ steps.filter.outputs.storybook }}
-            echo "${{ toJson(steps.pr_requirements.outputs.result) }}"
+            echo ${{ fromJson(steps.pr_requirements.outputs.result).ready_to_run_storybook }}
+            echo "${{ fromJson(steps.pr_requirements.outputs.result).ready_to_run_storybook }}"
   storybook_test:
     needs: [requirement_check]
     # Run on master commits or PRs that we want to run storybook tests.
