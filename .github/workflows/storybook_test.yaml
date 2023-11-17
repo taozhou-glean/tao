@@ -54,10 +54,12 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             })
-            console.log(reviews)
             return {
               ready_to_run_storybook: reviews.data.length > 0,
             }
+      - run: |
+            echo ${{ steps.filter.outputs.storybook }}
+            echo "${{ toJson(steps.pr_requirements.outputs.result) }}"
   storybook_test:
     needs: [requirement_check]
     # Run on master commits or PRs that we want to run storybook tests.
