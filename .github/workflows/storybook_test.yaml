@@ -49,7 +49,7 @@ jobs:
     # Run on master commits or PRs that we want to run storybook tests.
     if: ${{ success() && needs.requirement_check.outputs.should_run_storybook == 'true' }}
     # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/running-jobs-on-larger-runners
-    runs-on: macos-latest-large
+    runs-on: ubuntu-latest 
     # should finish ~6 min, 10 min max for -large
     # need to increase to 25 min for standard
     timeout-minutes: 10
